@@ -1,0 +1,102 @@
+[project]
+name = "agentic-ai-platform"
+version = "1.0.0"
+description = "Production-ready Agentic AI platform with LangGraph, FastAPI, and UV"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+keywords = ["ai", "agents", "langgraph", "langchain", "fastapi", "nlp"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "aiofiles>=25.1.0",
+    "black>=25.9.0",
+    "fastapi>=0.121.1",
+    "httpx>=0.28.1",
+    "langchain>=1.0.5",
+    "langchain-community>=0.4.1",
+    "langchain-core>=1.0.4",
+    "langchain-groq>=1.0.0",
+    "langchain-openai>=1.0.2",
+    "langgraph>=1.0.2",
+    "loguru>=0.7.3",
+    "mypy>=1.18.2",
+    "passlib[bcrypt]>=1.7.4",
+    "pydantic>=2.12.4",
+    "pydantic-settings>=2.11.0",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-cov>=7.0.0",
+    "python-dotenv>=1.2.1",
+    "python-jose[cryptography]>=3.5.0",
+    "python-multipart>=0.0.20",
+    "ruff>=0.14.4",
+    "tavily-python>=0.7.12",
+    "tenacity>=9.1.2",
+    "uvicorn[standard]>=0.38.0",
+]
+
+[project.scripts]
+serve = "uvicorn main:app --reload"
+test = "pytest"
+format = "black src/ tests/"
+lint = "ruff check src/ tests/"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  \.eggs
+  | \.git
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+]
+ignore = [
+    "E501",  # line too long
+    "B008",  # function calls in argument defaults
+]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+check_untyped_defs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--tb=short",
+    "--cov=src",
+    "--cov-report=term-missing",
+]
