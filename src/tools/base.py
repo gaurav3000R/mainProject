@@ -23,7 +23,7 @@ def get_web_search_tool(max_results: int = 5) -> TavilySearchResults:
     
     try:
         tool = TavilySearchResults(
-            api_key=settings.tavily_api_key,
+            tavily_api_key=settings.tavily_api_key,
             max_results=max_results,
             search_depth="advanced",
             include_answer=True,
