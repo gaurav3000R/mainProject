@@ -27,6 +27,7 @@ dependencies = [
     "langchain-openai>=1.0.2",
     "langchain-tavily>=0.2.13",
     "langgraph>=1.0.2",
+    "langgraph-cli[inmem]>=0.4.7",
     "loguru>=0.7.3",
     "mypy>=1.18.2",
     "passlib[bcrypt]>=1.7.4",

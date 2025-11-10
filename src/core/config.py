@@ -2,6 +2,7 @@
 Core configuration management using Pydantic Settings.
 Handles environment variables and application settings.
 """
+import os
 from functools import lru_cache
 from typing import Literal, List
 from pydantic import Field, field_validator
@@ -93,5 +94,21 @@ def get_settings() -> Settings:
     return Settings()
 
 
+def setup_langsmith():
+    """Setup LangSmith tracing environment variables."""
+    settings = get_settings()
+    
+    if settings.langchain_tracing_v2 and settings.langchain_api_key:
+        os.environ["LANGCHAIN_TRACING_V2"] = str(settings.langchain_tracing_v2)
+        os.environ["LANGCHAIN_ENDPOINT"] = settings.langchain_endpoint
+        os.environ["LANGCHAIN_API_KEY"] = settings.langchain_api_key
+        os.environ["LANGCHAIN_PROJECT"] = settings.langchain_project
+        return True
+    return False
+
+
 # Global settings instance
 settings = get_settings()
+
+# Setup LangSmith on import
+langsmith_enabled = setup_langsmith()

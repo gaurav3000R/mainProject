@@ -2,7 +2,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.core.config import settings
+from src.core.config import settings, langsmith_enabled
 from src.api.middlewares.base import (
     LoggingMiddleware,
     ErrorHandlerMiddleware,
@@ -11,6 +11,7 @@ from src.api.middlewares.base import (
 )
 from src.api.v1 import chat, research, writer, health
 from src.utils.logger import app_logger
+from src.utils.langsmith import verify_langsmith_connection
 
 
 @asynccontextmanager
@@ -20,6 +21,12 @@ async def lifespan(app: FastAPI):
     app_logger.info("Starting Agentic AI Platform...")
     app_logger.info(f"Environment: {settings.environment}")
     app_logger.info(f"Debug mode: {settings.debug}")
+    
+    # Verify LangSmith connection
+    if langsmith_enabled:
+        verify_langsmith_connection()
+    else:
+        app_logger.warning("LangSmith tracing is disabled. Enable in .env with LANGCHAIN_TRACING_V2=true")
     
     yield
     

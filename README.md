@@ -74,6 +74,21 @@ uv run uvicorn main:app --reload --port 8000
 🎉 **API is live at**: http://localhost:8000
 📚 **Interactive docs**: http://localhost:8000/docs
 
+### Run LangGraph Studio (Visual Debugging)
+
+```bash
+# Start LangGraph dev server with Studio
+./scripts/start_studio.sh
+
+# Or manually
+uv run langgraph dev --port 8123
+```
+
+🎨 **LangGraph Studio**: http://127.0.0.1:8123  
+📊 **LangSmith Traces**: https://smith.langchain.com/projects/p/agentic-ai-platform
+
+See [LangGraph Studio Guide](./docs/LANGGRAPH_STUDIO_GUIDE.md) for detailed usage.
+
 ## 📡 API Examples
 
 ### 1. Simple Chat
