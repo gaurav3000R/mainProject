@@ -5,6 +5,7 @@ from src.schemas.api import ChatRequest, ChatResponse
 from src.agents.graphs.base import ChatbotWithToolsGraphBuilder
 from src.api.dependencies import get_llm
 from src.llms.base import BaseLLM
+from src.services.memory import memory_manager
 from src.utils.logger import app_logger
 from src.utils.helpers import generate_token
 
@@ -17,10 +18,10 @@ async def chat(
     llm: BaseLLM = Depends(get_llm)
 ):
     """
-    Chat endpoint with tool integration.
+    Chat endpoint with tool integration and conversation memory.
     
     Args:
-        request: Chat request with message
+        request: Chat request with message and optional conversation_id
         llm: LLM instance from dependency
         
     Returns:
@@ -29,13 +30,23 @@ async def chat(
     try:
         app_logger.info(f"Processing chat request: {request.message[:50]}...")
         
+        # Generate or use existing conversation ID
+        conversation_id = request.conversation_id or generate_token(16)
+        
+        # Get conversation history
+        history_messages = memory_manager.get_messages(conversation_id)
+        
+        # Add current user message
+        memory_manager.add_user_message(conversation_id, request.message)
+        
         # Create graph with tools
         graph_builder = ChatbotWithToolsGraphBuilder(llm, tool_names=["web_search"])
         graph = graph_builder.build()
         
-        # Create input state
+        # Create input state with history + new message
+        all_messages = history_messages + [HumanMessage(content=request.message)]
         input_state = {
-            "messages": [HumanMessage(content=request.message)]
+            "messages": all_messages
         }
         
         # Invoke graph
@@ -45,15 +56,19 @@ async def chat(
         last_message = result["messages"][-1]
         response_content = last_message.content if hasattr(last_message, 'content') else str(last_message)
         
-        # Generate conversation ID
-        conversation_id = request.conversation_id or generate_token(16)
+        # Save AI response to memory
+        memory_manager.add_ai_message(conversation_id, response_content)
+        
+        # Get conversation metadata
+        metadata = memory_manager.get_conversation_metadata(conversation_id)
         
         return ChatResponse(
             message=response_content,
             conversation_id=conversation_id,
             metadata={
-                "message_count": len(result["messages"]),
-                "has_tool_calls": any(hasattr(msg, 'tool_calls') and msg.tool_calls for msg in result["messages"])
+                "message_count": metadata.get("message_count", 0),
+                "has_tool_calls": any(hasattr(msg, 'tool_calls') and msg.tool_calls for msg in result["messages"]),
+                "history_length": len(history_messages)
             }
         )
         
@@ -96,3 +111,100 @@ async def simple_chat(
     except Exception as e:
         app_logger.error(f"Simple chat error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Chat processing failed: {str(e)}")
+
+
+@router.get("/conversations")
+async def list_conversations():
+    """
+    List all active conversations.
+    
+    Returns:
+        List of conversation metadata
+    """
+    try:
+        conversations = memory_manager.list_conversations()
+        return {
+            "conversations": conversations,
+            "total": len(conversations)
+        }
+    except Exception as e:
+        app_logger.error(f"List conversations error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/conversations/{conversation_id}")
+async def get_conversation(conversation_id: str):
+    """
+    Get conversation history and metadata.
+    
+    Args:
+        conversation_id: Conversation identifier
+        
+    Returns:
+        Conversation details
+    """
+    try:
+        messages = memory_manager.get_messages(conversation_id)
+        metadata = memory_manager.get_conversation_metadata(conversation_id)
+        
+        # Format messages
+        formatted_messages = [
+            {
+                "role": "user" if msg.__class__.__name__ == "HumanMessage" else "assistant",
+                "content": msg.content
+            }
+            for msg in messages
+        ]
+        
+        return {
+            "conversation_id": conversation_id,
+            "messages": formatted_messages,
+            "metadata": metadata
+        }
+    except Exception as e:
+        app_logger.error(f"Get conversation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: str):
+    """
+    Delete a conversation.
+    
+    Args:
+        conversation_id: Conversation identifier
+        
+    Returns:
+        Success message
+    """
+    try:
+        memory_manager.delete_conversation(conversation_id)
+        return {
+            "message": f"Conversation {conversation_id} deleted",
+            "success": True
+        }
+    except Exception as e:
+        app_logger.error(f"Delete conversation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/conversations/{conversation_id}/clear")
+async def clear_conversation(conversation_id: str):
+    """
+    Clear conversation history (keep conversation but remove messages).
+    
+    Args:
+        conversation_id: Conversation identifier
+        
+    Returns:
+        Success message
+    """
+    try:
+        memory_manager.clear_conversation(conversation_id)
+        return {
+            "message": f"Conversation {conversation_id} cleared",
+            "success": True
+        }
+    except Exception as e:
+        app_logger.error(f"Clear conversation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
