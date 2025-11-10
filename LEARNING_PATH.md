@@ -725,6 +725,774 @@ CMD ["uv", "run", "python", "main.py"]
 
 ---
 
+## 🎯 Progressive Project Roadmap
+
+Build real-world projects in order of increasing complexity:
+
+| Level           | Project                      | Core Focus                           |
+|-----------------|------------------------------|--------------------------------------|
+| 🟢 Beginner     | Basic Chatbot                | Graph state, nodes, edges            |
+| 🟡 Intermediate | Chatbot with Tools           | Tool calling, routing, conditions    |
+| 🟡 Intermediate | Summarizing Chatbot          | Memory management, summarization     |
+| 🔵 Advanced     | RAG Chatbot                  | Retrieval, embeddings, vector stores |
+| 🔵 Advanced     | Corrective RAG               | Feedback loops, self-correction      |
+| 🟣 Expert       | Multi-Agent System           | Collaboration, orchestration         |
+| 🟣 Expert       | Human-in-the-Loop Agent      | Approval workflows, supervision      |
+
+### 🟢 Beginner Projects
+
+#### 1. Basic Chatbot
+**Core Concepts**: State management, nodes, edges, basic graph flow
+```python
+# Key Implementation
+- StateGraph with message history
+- Simple node functions
+- Linear flow: input → process → respond
+- Message accumulation with add_messages
+```
+
+#### 2. Echo Bot with Memory
+**Core Concepts**: Conversation memory, context preservation
+```python
+# Key Implementation
+- ConversationBufferMemory
+- State persistence across turns
+- Context window management
+```
+
+### 🟡 Intermediate Projects
+
+#### 3. Chatbot with Tools
+**Core Concepts**: Tool integration, conditional routing, ToolNode
+```python
+# Key Implementation
+- bind_tools() for LLM
+- ToolNode for execution
+- tools_condition for routing
+- Error handling for tool failures
+```
+
+#### 4. Summarizing Chatbot
+**Core Concepts**: Memory summarization, long conversations
+```python
+# Key Implementation
+- ConversationSummaryMemory
+- Periodic summarization node
+- Token limit management
+- Summary + recent messages pattern
+```
+
+#### 5. Intent Classification Bot
+**Core Concepts**: Routing based on user intent
+```python
+# Key Implementation
+- Intent classifier node
+- Conditional edges based on classification
+- Multiple specialized handlers
+- Fallback routing
+```
+
+### 🔵 Advanced Projects
+
+#### 6. RAG Chatbot
+**Core Concepts**: Retrieval-augmented generation, vector stores
+```python
+# Key Implementation
+- Document loading and chunking
+- Vector store (FAISS/Chroma)
+- Retriever integration
+- Context injection into prompts
+- Source citation
+```
+
+#### 7. Corrective RAG (CRAG)
+**Core Concepts**: Self-correction, relevance checking, feedback loops
+```python
+# Key Implementation
+- Relevance grader node
+- Web search fallback
+- Document grading
+- Iterative refinement
+- Quality assessment
+```
+
+#### 8. Agentic RAG
+**Core Concepts**: Active retrieval decisions, multi-step reasoning
+```python
+# Key Implementation
+- Retrieval decision node
+- Query transformation
+- Multi-query retrieval
+- Fusion of results
+- Adaptive retrieval strategy
+```
+
+### 🟣 Expert Projects
+
+#### 9. Multi-Agent System
+**Core Concepts**: Agent collaboration, supervisor pattern
+```python
+# Key Implementation
+- Supervisor agent for coordination
+- Specialized worker agents
+- Shared state management
+- Agent handoffs
+- Task delegation logic
+```
+
+#### 10. Human-in-the-Loop Agent
+**Core Concepts**: Interrupts, approval workflows, checkpointing
+```python
+# Key Implementation
+- interrupt() for human input
+- MemorySaver/SqliteSaver
+- Resume from checkpoint
+- Approval/rejection handling
+- Manual overrides
+```
+
+---
+
+## 📚 Module 9: Advanced Topics & Emerging Patterns (Week 13-14)
+
+### 9.1 Advanced RAG Techniques
+- [ ] **Query Transformations**
+  - Multi-query generation
+  - Query rewriting
+  - Hypothetical document embeddings (HyDE)
+  - Step-back prompting
+  
+- [ ] **Retrieval Strategies**
+  - Hybrid search (keyword + semantic)
+  - Re-ranking with cross-encoders
+  - Maximal Marginal Relevance (MMR)
+  - Parent-child document splitting
+  - Contextual compression
+
+- [ ] **RAG Evaluation**
+  - Faithfulness metrics
+  - Answer relevance
+  - Context precision/recall
+  - RAGAS framework
+
+**Practical Exercise**:
+```python
+# Exercise 33: Advanced RAG with re-ranking
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import CrossEncoderReranker
+
+base_retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
+compressor = CrossEncoderReranker(model_name="cross-encoder/ms-marco-MiniLM-L-6-v2")
+retriever = ContextualCompressionRetriever(
+    base_compressor=compressor,
+    base_retriever=base_retriever
+)
+```
+
+### 9.2 Agent Routing and Orchestration
+- [ ] **Semantic Routing**
+  - Intent-based routing
+  - Similarity-based routing
+  - Dynamic route selection
+  
+- [ ] **Supervisor Patterns**
+  - Centralized orchestration
+  - Delegation strategies
+  - Agent selection logic
+  
+- [ ] **Hierarchical Agents**
+  - Manager-worker patterns
+  - Nested agent systems
+  - Recursive task decomposition
+
+**Practical Exercise**:
+```python
+# Exercise 34: Semantic router
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+router_prompt = ChatPromptTemplate.from_messages([
+    ("system", "Route this query to: research, code, or general"),
+    ("user", "{input}")
+])
+
+router = router_prompt | llm | StrOutputParser()
+
+def route(state):
+    route_decision = router.invoke({"input": state["messages"][-1]})
+    return route_decision
+```
+
+### 9.3 Memory and State Management
+- [ ] **Advanced Memory Types**
+  - Entity memory
+  - Knowledge graphs
+  - Episodic memory
+  - Semantic memory
+  
+- [ ] **State Persistence**
+  - Database checkpointers
+  - Redis for distributed systems
+  - State versioning
+  - Branching conversations
+
+- [ ] **Context Window Management**
+  - Sliding window strategies
+  - Importance-based selection
+  - Compression techniques
+
+**Practical Exercise**:
+```python
+# Exercise 35: Entity memory
+from langchain.memory import ConversationEntityMemory
+
+entity_memory = ConversationEntityMemory(llm=llm)
+entity_memory.save_context(
+    {"input": "Alice works at Google"},
+    {"output": "I'll remember that Alice works at Google."}
+)
+print(entity_memory.entity_store)  # Shows extracted entities
+```
+
+### 9.4 LLM Orchestration Patterns
+- [ ] **Chain-of-Thought (CoT)**
+  - Zero-shot CoT
+  - Few-shot CoT
+  - Self-consistency
+  
+- [ ] **ReAct Pattern**
+  - Reasoning and acting
+  - Thought-action-observation loops
+  - Reflection mechanisms
+  
+- [ ] **Plan-and-Execute**
+  - Planning agents
+  - Execution agents
+  - Plan refinement
+
+**Practical Exercise**:
+```python
+# Exercise 36: ReAct agent with LangGraph
+from langgraph.prebuilt import create_react_agent
+
+tools = [search_tool, calculator_tool]
+react_agent = create_react_agent(llm, tools)
+
+result = react_agent.invoke({
+    "messages": [("user", "What's the population of Tokyo times 5?")]
+})
+```
+
+### 9.5 Evaluation and Monitoring
+- [ ] **LLM Evaluation**
+  - Output quality metrics
+  - Factual accuracy
+  - Hallucination detection
+  - Consistency checks
+  
+- [ ] **Agent Performance**
+  - Success rate tracking
+  - Latency monitoring
+  - Token usage optimization
+  - Cost tracking
+  
+- [ ] **Observability**
+  - LangSmith integration
+  - Distributed tracing
+  - Error tracking
+  - User feedback loops
+
+**Practical Exercise**:
+```python
+# Exercise 37: Evaluation with LangSmith
+from langsmith import Client
+from langsmith.evaluation import evaluate
+
+client = Client()
+
+def accuracy_evaluator(run, example):
+    prediction = run.outputs["output"]
+    reference = example.outputs["output"]
+    return {"score": int(prediction == reference)}
+
+results = evaluate(
+    lambda inputs: agent.invoke(inputs),
+    data="dataset_name",
+    evaluators=[accuracy_evaluator],
+)
+```
+
+---
+
+## 📚 Module 10: Specialized Agent Patterns (Week 15-16)
+
+### 10.1 Self-Improving Agents
+- [ ] **Reflection Patterns**
+  - Self-critique mechanisms
+  - Output evaluation
+  - Iterative refinement
+  
+- [ ] **Learning from Feedback**
+  - User feedback integration
+  - Preference learning
+  - Error correction
+  
+- [ ] **Meta-prompting**
+  - Prompt self-improvement
+  - Dynamic prompt generation
+
+**Practical Exercise**:
+```python
+# Exercise 38: Reflection agent
+def reflect_node(state):
+    draft = state["draft"]
+    reflection = llm.invoke([
+        ("system", "Critique this response and suggest improvements"),
+        ("user", draft)
+    ])
+    return {"reflection": reflection, "iteration": state["iteration"] + 1}
+
+def should_continue(state):
+    return "refine" if state["iteration"] < 3 else "end"
+```
+
+### 10.2 Autonomous Agents
+- [ ] **Goal-Oriented Behavior**
+  - Goal decomposition
+  - Sub-goal planning
+  - Success criteria
+  
+- [ ] **Environment Interaction**
+  - Action execution
+  - State observation
+  - Feedback processing
+  
+- [ ] **Long-Running Tasks**
+  - Task queues
+  - Progress tracking
+  - Pause and resume
+
+**Practical Exercise**:
+```python
+# Exercise 39: Goal-driven agent
+class GoalState(TypedDict):
+    goal: str
+    subgoals: list[str]
+    completed: list[str]
+    current_action: str
+
+def plan_node(state):
+    subgoals = planner_llm.invoke(f"Break down goal: {state['goal']}")
+    return {"subgoals": subgoals}
+
+def execute_node(state):
+    next_goal = state["subgoals"][0]
+    action = executor_llm.invoke(f"How to achieve: {next_goal}")
+    return {"current_action": action}
+```
+
+### 10.3 Specialized Domain Agents
+- [ ] **Code Agents**
+  - Code generation
+  - Code explanation
+  - Bug detection and fixing
+  - Test generation
+  
+- [ ] **Data Analysis Agents**
+  - SQL generation
+  - Data visualization
+  - Statistical analysis
+  - Report generation
+  
+- [ ] **Research Agents**
+  - Literature review
+  - Source aggregation
+  - Citation management
+  - Synthesis
+
+**Practical Exercise**:
+```python
+# Exercise 40: Code agent with execution
+from langchain_experimental.tools import PythonREPLTool
+
+python_repl = PythonREPLTool()
+
+def code_generation_node(state):
+    code = llm.invoke([
+        ("system", "Generate Python code for the task"),
+        ("user", state["task"])
+    ])
+    return {"generated_code": code}
+
+def code_execution_node(state):
+    result = python_repl.run(state["generated_code"])
+    return {"execution_result": result}
+```
+
+### 10.4 Multimodal Agents
+- [ ] **Vision + Language**
+  - Image understanding
+  - Visual question answering
+  - Image generation integration
+  
+- [ ] **Speech Integration**
+  - Speech-to-text
+  - Text-to-speech
+  - Voice-based agents
+  
+- [ ] **Document Understanding**
+  - PDF parsing
+  - Table extraction
+  - Form processing
+
+**Practical Exercise**:
+```python
+# Exercise 41: Vision agent
+from langchain_openai import ChatOpenAI
+
+vision_llm = ChatOpenAI(model="gpt-4-vision-preview")
+
+def analyze_image_node(state):
+    response = vision_llm.invoke([
+        {
+            "type": "text",
+            "text": "Describe this image in detail"
+        },
+        {
+            "type": "image_url",
+            "image_url": {"url": state["image_url"]}
+        }
+    ])
+    return {"image_description": response.content}
+```
+
+### 10.5 Safety and Guardrails
+- [ ] **Input Validation**
+  - Prompt injection detection
+  - Malicious input filtering
+  - Content moderation
+  
+- [ ] **Output Filtering**
+  - Harmful content detection
+  - PII redaction
+  - Fact-checking
+  
+- [ ] **Usage Policies**
+  - Rate limiting
+  - Quota management
+  - Abuse prevention
+
+**Practical Exercise**:
+```python
+# Exercise 42: Guardrails implementation
+from guardrails import Guard
+from guardrails.validators import ValidLength, ToxicLanguage
+
+guard = Guard().use_many(
+    ValidLength(min=10, max=500),
+    ToxicLanguage(threshold=0.5, on_fail="reask")
+)
+
+def safe_generation_node(state):
+    raw_output = llm.invoke(state["messages"])
+    validated = guard.validate(raw_output.content)
+    return {"output": validated.validated_output}
+```
+
+---
+
+## 📚 Module 11: Enterprise & Production (Week 17-18)
+
+### 11.1 Scalability Patterns
+- [ ] **Horizontal Scaling**
+  - Load balancing
+  - Stateless design
+  - Distributed caching
+  
+- [ ] **Async Processing**
+  - Task queues (Celery, RQ)
+  - Background jobs
+  - WebSocket for real-time
+  
+- [ ] **Database Optimization**
+  - Connection pooling
+  - Query optimization
+  - Indexing strategies
+
+**Practical Exercise**:
+```python
+# Exercise 43: Async task queue
+from celery import Celery
+
+celery_app = Celery('tasks', broker='redis://localhost:6379')
+
+@celery_app.task
+def process_agent_task(input_data):
+    result = agent_graph.invoke(input_data)
+    return result
+
+# In FastAPI
+@app.post("/agent/async")
+async def async_agent(request: AgentRequest):
+    task = process_agent_task.delay(request.dict())
+    return {"task_id": task.id}
+```
+
+### 11.2 Monitoring and Observability
+- [ ] **Metrics Collection**
+  - Prometheus integration
+  - Custom metrics
+  - Performance tracking
+  
+- [ ] **Logging Best Practices**
+  - Structured logging
+  - Log aggregation
+  - Error tracking (Sentry)
+  
+- [ ] **Distributed Tracing**
+  - OpenTelemetry
+  - Trace context propagation
+  - Span attributes
+
+**Practical Exercise**:
+```python
+# Exercise 44: Prometheus metrics
+from prometheus_client import Counter, Histogram, generate_latest
+
+request_count = Counter('agent_requests_total', 'Total agent requests')
+request_duration = Histogram('agent_request_duration_seconds', 'Request duration')
+
+@app.post("/agent")
+@request_duration.time()
+async def agent_endpoint(request: AgentRequest):
+    request_count.inc()
+    result = agent_graph.invoke(request.dict())
+    return result
+```
+
+### 11.3 Cost Optimization
+- [ ] **Token Management**
+  - Prompt compression
+  - Response caching
+  - Model selection strategies
+  
+- [ ] **Batch Processing**
+  - Request batching
+  - Parallel processing
+  - Queue optimization
+  
+- [ ] **Resource Allocation**
+  - Auto-scaling
+  - Spot instances
+  - Reserved capacity
+
+**Practical Exercise**:
+```python
+# Exercise 45: Response caching
+from functools import lru_cache
+import hashlib
+
+@lru_cache(maxsize=1000)
+def cached_llm_call(prompt_hash: str, prompt: str):
+    return llm.invoke(prompt)
+
+def call_with_cache(prompt: str):
+    prompt_hash = hashlib.md5(prompt.encode()).hexdigest()
+    return cached_llm_call(prompt_hash, prompt)
+```
+
+### 11.4 Multi-tenancy
+- [ ] **Tenant Isolation**
+  - Data separation
+  - Resource quotas
+  - Custom configurations
+  
+- [ ] **Authentication & Authorization**
+  - JWT tokens
+  - Role-based access (RBAC)
+  - API key management
+  
+- [ ] **Billing & Usage Tracking**
+  - Usage metering
+  - Cost allocation
+  - Subscription management
+
+**Practical Exercise**:
+```python
+# Exercise 46: Multi-tenant architecture
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPBearer
+
+security = HTTPBearer()
+
+async def get_tenant_id(token = Depends(security)) -> str:
+    # Validate JWT and extract tenant
+    payload = jwt.decode(token.credentials, SECRET_KEY)
+    return payload["tenant_id"]
+
+@app.post("/agent")
+async def tenant_agent(
+    request: AgentRequest,
+    tenant_id: str = Depends(get_tenant_id)
+):
+    # Load tenant-specific config
+    config = get_tenant_config(tenant_id)
+    result = agent_graph.invoke(request.dict(), config=config)
+    return result
+```
+
+### 11.5 Disaster Recovery
+- [ ] **Backup Strategies**
+  - State backups
+  - Database replication
+  - Point-in-time recovery
+  
+- [ ] **High Availability**
+  - Redundancy
+  - Failover mechanisms
+  - Health checks
+  
+- [ ] **Incident Response**
+  - Alerting
+  - Runbooks
+  - Post-mortem analysis
+
+---
+
+## 🚀 Advanced Real-World Projects
+
+### Project 5: Autonomous Research Assistant 🔬
+**Complexity**: 🟣 Expert | **Duration**: 3-4 weeks
+
+**Features**:
+- [ ] Multi-source research (web, papers, docs)
+- [ ] Source credibility assessment
+- [ ] Automated fact-checking
+- [ ] Citation graph building
+- [ ] Report generation with citations
+- [ ] Continuous monitoring of topics
+
+**Architecture**:
+```
+User Query
+    ↓
+Query Analysis → Planning
+    ↓
+Multi-Agent Research (parallel)
+├── Web Search Agent
+├── Academic Paper Agent
+├── Database Query Agent
+└── Expert System Agent
+    ↓
+Synthesis & Fact-Checking
+    ↓
+Report Generation
+    ↓
+Human Review (if needed)
+    ↓
+Final Output
+```
+
+### Project 6: Code Review & Refactoring Agent 💻
+**Complexity**: 🟣 Expert | **Duration**: 3-4 weeks
+
+**Features**:
+- [ ] Multi-language support
+- [ ] Security vulnerability detection
+- [ ] Performance optimization suggestions
+- [ ] Code style enforcement
+- [ ] Automated test generation
+- [ ] Documentation generation
+- [ ] Refactoring recommendations
+
+**Tech Stack**:
+- LangGraph for workflow
+- Tree-sitter for parsing
+- AST analysis tools
+- GitHub API integration
+- Static analysis tools
+
+### Project 7: Intelligent Customer Support Hub 🎧
+**Complexity**: 🟣 Expert | **Duration**: 4-5 weeks
+
+**Features**:
+- [ ] Intent classification
+- [ ] Multi-language support
+- [ ] Knowledge base RAG
+- [ ] Ticket creation & tracking
+- [ ] Sentiment analysis
+- [ ] Agent routing (L1, L2, human)
+- [ ] Analytics dashboard
+- [ ] Integration with CRM
+
+**Architecture**:
+```
+Customer Query
+    ↓
+Intent + Sentiment Analysis
+    ↓
+Route Decision
+├── FAQ Bot (simple queries)
+├── Technical Agent (complex tech)
+├── Billing Agent (payments)
+└── Human Escalation
+    ↓
+Knowledge Base RAG
+    ↓
+Response Generation
+    ↓
+Quality Check
+    ↓
+Customer Feedback Loop
+```
+
+### Project 8: Personal AI Assistant 🤖
+**Complexity**: 🟣 Expert | **Duration**: 5-6 weeks
+
+**Features**:
+- [ ] Email management
+- [ ] Calendar scheduling
+- [ ] Task prioritization
+- [ ] Meeting summarization
+- [ ] Document drafting
+- [ ] Research assistance
+- [ ] Data analysis
+- [ ] Multi-platform integration
+
+**Integrations**:
+- Gmail API
+- Google Calendar
+- Slack/Teams
+- Notion/Confluence
+- Jira/Asana
+
+### Project 9: Content Generation Pipeline 📝
+**Complexity**: 🔵 Advanced | **Duration**: 2-3 weeks
+
+**Features**:
+- [ ] Topic research
+- [ ] Outline generation
+- [ ] Content writing (multiple formats)
+- [ ] SEO optimization
+- [ ] Image suggestion
+- [ ] Plagiarism checking
+- [ ] Multi-language support
+- [ ] A/B variant generation
+
+### Project 10: Financial Analysis Agent 💹
+**Complexity**: 🟣 Expert | **Duration**: 4-5 weeks
+
+**Features**:
+- [ ] Real-time market data integration
+- [ ] Financial statement analysis
+- [ ] Sentiment analysis (news, social)
+- [ ] Risk assessment
+- [ ] Portfolio recommendations
+- [ ] Regulatory compliance checking
+- [ ] Report generation
+
+---
+
 ## 🎯 Learning Objectives
 
 By completing this course, you will be able to:
