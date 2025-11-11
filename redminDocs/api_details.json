@@ -1,0 +1,116 @@
+{
+  "internal_apis": {
+    "description": "Internal Next.js API endpoints that act as a proxy to the external Redmine API. The client application communicates with these endpoints.",
+    "base_path": "/api/redmine",
+    "endpoints": [
+      {
+        "path": "/validate",
+        "method": "POST",
+        "description": "Validates the user's Redmine URL and API key by making a test call to the Redmine API.",
+        "request_body": {
+          "redmineUrl": "string",
+          "apiKey": "string"
+        }
+      },
+      {
+        "path": "/projects",
+        "method": "POST",
+        "description": "Fetches a list of projects from the Redmine API.",
+        "request_body": {
+          "redmineUrl": "string",
+          "apiKey": "string"
+        }
+      },
+      {
+        "path": "/issues",
+        "method": "POST",
+        "description": "Fetches a list of issues from the Redmine API. Supports filtering by various parameters passed in the request body.",
+        "request_body": {
+          "redmineUrl": "string",
+          "apiKey": "string",
+          "filters": "object (optional)"
+        }
+      },
+      {
+        "path": "/time-entries",
+        "method": "POST",
+        "description": "Fetches time entries from the Redmine API.",
+        "request_body": {
+          "redmineUrl": "string",
+          "apiKey": "string"
+        }
+      },
+      {
+        "path": "/analytics",
+        "method": "POST",
+        "description": "Performs server-side data aggregation. It fetches data from multiple Redmine API endpoints (issues, projects, etc.) to generate analytics.",
+        "request_body": {
+          "redmineUrl": "string",
+          "apiKey": "string",
+          "projectId": "number (optional)"
+        }
+      },
+      {
+        "path": "/metadata",
+        "method": "POST",
+        "description": "Fetches metadata from the Redmine API, such as issue statuses, priorities, and trackers.",
+        "request_body": {
+          "redmineUrl": "string",
+          "apiKey": "string"
+        }
+      }
+    ]
+  },
+  "external_apis": {
+    "description": "The external Redmine REST API that this application communicates with. The communication is handled by the RedmineAPI client defined in src/lib/redmine-api.ts.",
+    "client_location": "src/lib/redmine-api.ts",
+    "authentication": {
+      "method": "API Key in Header",
+      "header": "X-Redmine-API-Key"
+    },
+    "endpoints": [
+      {
+        "method_name": "validateConnection",
+        "http_method": "GET",
+        "endpoint": "/users/current.json",
+        "description": "Validates API credentials."
+      },
+      {
+        "method_name": "getProjects",
+        "http_method": "GET",
+        "endpoint": "/projects.json",
+        "description": "Fetches all projects."
+      },
+      {
+        "method_name": "getIssues",
+        "http_method": "GET",
+        "endpoint": "/issues.json",
+        "description": "Fetches issues, with support for extensive filtering."
+      },
+      {
+        "method_name": "getTimeEntries",
+        "http_method": "GET",
+        "endpoint": "/time_entries.json",
+        "description": "Fetches time log entries."
+      },
+      {
+        "method_name": "getIssueStatuses",
+        "http_method": "GET",
+        "endpoint": "/issue_statuses.json",
+        "description": "Fetches available issue statuses."
+      },
+      {
+        "method_name": "getPriorities",
+        "http_method": "GET",
+        "endpoint": "/enumerations/issue_priorities.json",
+        "description": "Fetches issue priority levels."
+      },
+      {
+        "method_name": "getTrackers",
+        "http_method": "GET",
+        "endpoint": "/trackers.json",
+        "description": "Fetches available trackers."
+      }
+    ]
+  }
+}

@@ -9,7 +9,7 @@ from src.api.middlewares.base import (
     RateLimitMiddleware,
     CORSHeadersMiddleware
 )
-from src.api.v1 import chat, research, writer, health, news
+from src.api.v1 import chat, research, writer, health, news, redmine
 from src.utils.logger import app_logger
 from src.utils.langsmith import verify_langsmith_connection
 
@@ -78,6 +78,7 @@ def create_application() -> FastAPI:
     app.include_router(research.router, prefix=settings.api_v1_prefix)
     app.include_router(writer.router, prefix=settings.api_v1_prefix)
     app.include_router(news.router, prefix=settings.api_v1_prefix)
+    app.include_router(redmine.router, prefix=settings.api_v1_prefix)
     
     return app
 
