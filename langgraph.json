@@ -1,10 +1,14 @@
 {
-  "dependencies": ["."],
+  "dependencies": [
+    "."
+  ],
   "graphs": {
     "chatbot": "./src/agents/graphs/deployable.py:chatbot_graph",
     "chatbot_with_tools": "./src/agents/graphs/deployable.py:chatbot_with_tools_graph",
     "research_agent": "./src/agents/graphs/deployable.py:research_graph",
-    "content_writer": "./src/agents/graphs/deployable.py:writer_graph"
+    "content_writer": "./src/agents/graphs/deployable.py:writer_graph",
+    "news_summarization": "./src/agents/graphs/deployable.py:news_graph",
+    "redmine_chatbot": "./src/agents/graphs/deployable.py:redmine_graph"
   },
   "env": ".env"
 }
