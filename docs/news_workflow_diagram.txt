@@ -1,0 +1,173 @@
+NEWS SUMMARIZATION WORKFLOW
+============================
+
+┌─────────────────────────────────────────────────────────────────┐
+│                     NEWS SUMMARIZATION SYSTEM                    │
+└─────────────────────────────────────────────────────────────────┘
+
+API Request:
+POST /api/v1/news/summarize
+{
+  "query": "AI news today",
+  "max_results": 5
+}
+     │
+     ▼
+┌─────────────────┐
+│   START NODE    │
+│                 │
+│  Initialize:    │
+│  - query        │
+│  - max_results  │
+│  - status       │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────────────────────┐
+│  NODE 1: FETCH NEWS                     │
+├─────────────────────────────────────────┤
+│  Function: fetch_news_node()            │
+│                                         │
+│  Actions:                               │
+│  1. Call web_search tool                │
+│  2. Parse search results                │
+│  3. Extract articles:                   │
+│     - title                             │
+│     - content                           │
+│     - url                               │
+│     - source                            │
+│                                         │
+│  Output: news_articles[]                │
+└────────────┬────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────┐
+│  NODE 2: SUMMARIZE                      │
+├─────────────────────────────────────────┤
+│  Function: summarize_news_node()        │
+│                                         │
+│  Actions:                               │
+│  1. Prepare articles text               │
+│  2. Create summarization prompt         │
+│  3. Call LLM (Groq/OpenAI):             │
+│     - Analyze articles                  │
+│     - Generate summary (200-300 words)  │
+│     - Highlight key facts               │
+│  4. Format response                     │
+│                                         │
+│  Output: summary (AI-generated)         │
+└────────────┬────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────┐
+│  NODE 3: SAVE RESULT                    │
+├─────────────────────────────────────────┤
+│  Function: save_result_node()           │
+│                                         │
+│  Actions:                               │
+│  1. Create data directory               │
+│  2. Generate filename with timestamp    │
+│  3. Prepare JSON data:                  │
+│     {                                   │
+│       "query": "...",                   │
+│       "timestamp": "...",               │
+│       "articles": [...],                │
+│       "summary": "..."                  │
+│     }                                   │
+│  4. Write to file                       │
+│                                         │
+│  Output: saved_path                     │
+└────────────┬────────────────────────────┘
+             │
+             ▼
+┌─────────────────┐
+│    END NODE     │
+│                 │
+│  Return:        │
+│  - summary      │
+│  - saved_path   │
+│  - status       │
+└────────┬────────┘
+         │
+         ▼
+API Response:
+{
+  "success": true,
+  "query": "AI news today",
+  "articles_count": 5,
+  "summary": "Comprehensive summary...",
+  "saved_path": "data/news_summaries/...",
+  "status": "completed"
+}
+
+
+STATE TRANSITIONS
+=================
+
+State Object Flow:
+
+{
+  query: str                    ← Input (user provided)
+  max_results: int              ← Input (user provided, default 5)
+  news_articles: []             ← Populated by NODE 1
+  summary: ""                   ← Populated by NODE 2
+  saved_path: null              ← Populated by NODE 3
+  status: "started"             ← Updated at each node
+  error: null                   ← Set if any error occurs
+}
+
+Status Flow:
+  started → fetched → summarized → completed
+
+
+ERROR HANDLING
+==============
+
+At each node, errors are caught and stored:
+
+If NODE 1 fails:
+  status = "error"
+  error = "Failed to fetch news: {reason}"
+  
+If NODE 2 fails:
+  status = "error"  
+  error = "Failed to summarize: {reason}"
+  
+If NODE 3 fails:
+  status = "error"
+  error = "Failed to save: {reason}"
+
+
+EXAMPLE OUTPUT FILE
+===================
+
+data/news_summaries/20251111_050000_AI_news.json:
+
+{
+  "query": "AI news today",
+  "timestamp": "20251111_050000",
+  "articles_count": 5,
+  "articles": [
+    {
+      "title": "Breaking: New AI Breakthrough",
+      "content": "Researchers announced...",
+      "url": "https://example.com/article1",
+      "source": "web"
+    },
+    ...
+  ],
+  "summary": "Recent developments in artificial intelligence 
+              have shown remarkable progress. Key highlights include...
+              [200-300 words AI-generated summary]",
+  "status": "completed"
+}
+
+
+TECHNOLOGY STACK
+================
+
+- LangGraph: Workflow orchestration
+- FastAPI: REST API endpoints
+- Groq/OpenAI: LLM for summarization
+- Tavily: Web search API
+- Python asyncio: Async execution
