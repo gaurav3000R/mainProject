@@ -65,7 +65,9 @@ class GroqLLM(BaseLLM):
                 api_key=settings.groq_api_key,
                 model=self.model_name,
                 temperature=self.temperature,
-                max_tokens=settings.default_max_tokens
+                max_tokens=settings.default_max_tokens,
+                timeout=30,  # 30 second timeout for faster failures
+                max_retries=1  # Reduce retries for speed
             )
             app_logger.info(f"Initialized Groq LLM with model: {self.model_name}")
         return self._client

@@ -7,7 +7,7 @@ from src.utils.logger import app_logger
 
 
 @tool
-async def get_redmine_projects(limit: str = "20") -> str:
+async def get_redmine_projects(limit: int = 20) -> str:
     """
     Get list of all projects from Redmine.
     
@@ -29,9 +29,7 @@ async def get_redmine_projects(limit: str = "20") -> str:
           Description: Project description...
     """
     try:
-        # Convert string to int
-        limit_int = int(limit)
-        projects = await redmine_client.get_projects(limit=limit_int)
+        projects = await redmine_client.get_projects(limit=limit)
         
         if not projects:
             return "No projects found."
@@ -52,15 +50,15 @@ async def get_redmine_projects(limit: str = "20") -> str:
 
 @tool
 async def get_redmine_issues(
-    project_id: str = "null",
+    project_id: Optional[int] = None,
     status: str = "open",
-    limit: str = "20"
+    limit: int = 20
 ) -> str:
     """
     Get list of issues from Redmine.
     
     Args:
-        project_id: Optional project ID to filter by (use "null" for all projects)
+        project_id: Optional project ID to filter by (leave empty for all projects)
         status: Status filter ('open', 'closed', '*' for all). Default: 'open'
         limit: Maximum number of issues to return (default: 20)
         
@@ -68,14 +66,12 @@ async def get_redmine_issues(
         Formatted string with issue information
     """
     try:
-        # Convert parameters
-        proj_id = None if project_id == "null" or not project_id else int(project_id)
-        limit_int = int(limit)
+        proj_id = project_id
         
         issues = await redmine_client.get_issues(
             project_id=proj_id,
             status_id=status,
-            limit=limit_int
+            limit=limit
         )
         
         if not issues:
@@ -99,32 +95,27 @@ async def get_redmine_issues(
 
 
 @tool
-async def get_redmine_issue_details(issue_id: str) -> str:
+async def get_redmine_issue_details(issue_id: int) -> str:
     """
     Get detailed information about a specific issue by its numeric ID.
     
-    IMPORTANT: This tool requires a numeric issue ID (e.g., "123", "456").
+    IMPORTANT: This tool requires a numeric issue ID (e.g., 123, 456).
     If you only have an issue title or name, use search_redmine_issues instead.
     
     Args:
-        issue_id: The numeric issue ID (e.g., "123", not a title or name)
+        issue_id: The numeric issue ID (e.g., 123, not a title or name)
         
     Returns:
         Formatted string with detailed issue information
         
     Examples:
-        - Good: issue_id="123"
-        - Good: issue_id="456"
+        - Good: issue_id=123
+        - Good: issue_id=456
         - Bad: issue_id="Fix login bug" (use search_redmine_issues instead)
         - Bad: issue_id="Project Name" (use get_redmine_projects instead)
     """
     try:
-        # Validate that issue_id is numeric
-        if not issue_id.replace("-", "").isdigit():
-            return f"Error: '{issue_id}' is not a valid issue ID. Issue IDs must be numbers. If you're looking for an issue by name, use search_redmine_issues tool instead."
-        
-        issue_id_int = int(issue_id)
-        issue = await redmine_client.get_issue(issue_id_int)
+        issue = await redmine_client.get_issue(issue_id)
         
         if not issue:
             return f"Issue #{issue_id} not found."
@@ -150,7 +141,7 @@ async def get_redmine_issue_details(issue_id: str) -> str:
 
 @tool
 async def create_redmine_issue(
-    project_id: str,
+    project_id: int,
     subject: str,
     description: str = "",
     priority: str = "normal"
@@ -168,8 +159,6 @@ async def create_redmine_issue(
         Success message with created issue ID
     """
     try:
-        project_id_int = int(project_id)
-        
         # Map priority names to IDs (standard Redmine)
         priority_map = {
             "low": 1,
@@ -181,7 +170,7 @@ async def create_redmine_issue(
         priority_id = priority_map.get(priority.lower(), 2)
         
         result = await redmine_client.create_issue(
-            project_id=project_id_int,
+            project_id=project_id,
             subject=subject,
             description=description,
             priority_id=priority_id
@@ -198,7 +187,7 @@ async def create_redmine_issue(
 
 @tool
 async def update_redmine_issue(
-    issue_id: str,
+    issue_id: int,
     subject: Optional[str] = None,
     description: Optional[str] = None,
     status: Optional[str] = None
@@ -216,8 +205,6 @@ async def update_redmine_issue(
         Success message
     """
     try:
-        issue_id_int = int(issue_id)
-        
         # Note: Status IDs are installation-specific
         # You may need to fetch statuses first
         status_id = None
@@ -229,7 +216,7 @@ async def update_redmine_issue(
                     break
         
         await redmine_client.update_issue(
-            issue_id=issue_id_int,
+            issue_id=issue_id,
             subject=subject,
             description=description,
             status_id=status_id
@@ -242,22 +229,19 @@ async def update_redmine_issue(
 
 
 @tool
-async def get_redmine_time_entries(project_id: str = "null", limit: str = "20") -> str:
+async def get_redmine_time_entries(project_id: Optional[int] = None, limit: int = 20) -> str:
     """
     Get time entries from Redmine.
     
     Args:
-        project_id: Optional project ID to filter by (use "null" for all)
+        project_id: Optional project ID to filter by (leave empty for all)
         limit: Maximum number of entries to return (default: 20)
         
     Returns:
         Formatted string with time entry information
     """
     try:
-        proj_id = None if project_id == "null" or not project_id else int(project_id)
-        limit_int = int(limit)
-        
-        entries = await redmine_client.get_time_entries(project_id=proj_id, limit=limit_int)
+        entries = await redmine_client.get_time_entries(project_id=project_id, limit=limit)
         
         if not entries:
             return "No time entries found."
@@ -311,7 +295,7 @@ async def get_redmine_metadata() -> str:
 
 
 @tool
-async def search_redmine_issues(query: str, limit: str = "10") -> str:
+async def search_redmine_issues(query: str, limit: int = 10) -> str:
     """
     Search for issues by keywords in their subject or description.
     
@@ -336,8 +320,6 @@ async def search_redmine_issues(query: str, limit: str = "10") -> str:
         - query="payment" → Finds all payment-related issues
     """
     try:
-        limit_int = int(limit)
-        
         # Get all open issues and filter by query
         issues = await redmine_client.get_issues(status_id="*", limit=100)
         
@@ -347,7 +329,7 @@ async def search_redmine_issues(query: str, limit: str = "10") -> str:
             if query.lower() in issue['subject'].lower() or
                query.lower() in issue.get('description', '').lower() or
                query.lower() in issue.get('project', {}).get('name', '').lower()
-        ][:limit_int]
+        ][:limit]
         
         if not matching_issues:
             return f"No issues found matching '{query}'."

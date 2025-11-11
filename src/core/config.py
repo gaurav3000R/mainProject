@@ -68,9 +68,9 @@ class Settings(BaseSettings):
     
     # Model Configuration
     default_llm_provider: Literal["groq", "openai"] = "groq"
-    default_model: str = "llama-3.3-70b-versatile"
-    default_temperature: float = 0.7
-    default_max_tokens: int = 4096
+    default_model: str = "qwen/qwen3-32b"  # Better tool calling support
+    default_temperature: float = 0.5  # Lower for more deterministic responses
+    default_max_tokens: int = 2048  # Reduced for faster responses
     
     @field_validator("allowed_origins", mode="before")
     @classmethod

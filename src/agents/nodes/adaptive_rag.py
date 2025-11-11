@@ -18,9 +18,9 @@ from src.utils.logger import app_logger
 class RouteQuery(BaseModel):
     """Route a user query to the most relevant datasource."""
     
-    datasource: Literal["redmine_tools", "web_search", "direct_answer"] = Field(
+    datasource: Literal["redmine_tools", "vector_search", "web_search", "direct_answer"] = Field(
         ...,
-        description="Given a user question, choose to route it to redmine_tools, web_search, or answer directly.",
+        description="Given a user question, choose to route it to redmine_tools, vector_search, web_search, or answer directly.",
     )
     reasoning: str = Field(
         ...,
@@ -34,6 +34,7 @@ class AdaptiveRAGRouter:
     
     Routes:
     - redmine_tools: Questions about projects, issues, time entries (needs real-time data)
+    - vector_search: Semantic search for similar issues or content-based queries
     - web_search: General questions not in Redmine (definitions, how-tos, external info)
     - direct_answer: Simple questions, greetings, or when LLM has sufficient knowledge
     """
@@ -61,36 +62,50 @@ class AdaptiveRAGRouter:
         """
         system_prompt = """You are an expert at routing user questions to the appropriate datasource.
 
-You have access to three datasources:
+You have access to FOUR datasources:
 
 1. **redmine_tools**: Use this for questions about:
    - Projects in Redmine (list projects, project details)
-   - Issues (view, create, update, search issues)
+   - Current issues (view, create, update issues)
    - Time entries (view time logs)
    - Metadata (statuses, priorities, trackers)
-   - Any real-time Redmine data
+   - Any real-time Redmine data (exact searches, current status)
 
-2. **web_search**: Use this for:
+2. **vector_search**: Use this for SEMANTIC searches like:
+   - "Find issues similar to X"
+   - "Show issues related to [concept]"
+   - "What issues mention [topic]?"
+   - "Issues about [description]" (content-based, not exact keywords)
+   - Finding similar or related issues by meaning
+
+3. **web_search**: Use this for:
    - General information not in Redmine
    - How-to guides or tutorials
    - Definitions or explanations
    - External information
    - Current events or news
 
-3. **direct_answer**: Use this for:
+4. **direct_answer**: Use this for:
    - Simple greetings or pleasantries
    - Questions about capabilities
    - Questions you can answer with general knowledge
    - Clarification questions
    - Simple conversational responses
 
+Key Differences:
+- redmine_tools → Real-time data, exact searches, CRUD operations
+- vector_search → Semantic similarity, "find similar", content-based discovery
+- web_search → External knowledge
+- direct_answer → Simple queries
+
 Examples:
-- "Show me all projects" → redmine_tools (needs real Redmine data)
+- "Show me all projects" → redmine_tools (real-time list)
+- "Find issues similar to authentication problems" → vector_search (semantic)
+- "Issues about payment" → vector_search (content-based)
+- "What is the status of issue #123?" → redmine_tools (real-time)
 - "What is Redmine?" → direct_answer (general knowledge)
-- "How to set up CI/CD?" → web_search (external information)
+- "How to set up CI/CD?" → web_search (external info)
 - "Hello" → direct_answer (greeting)
-- "What can you do?" → direct_answer (about capabilities)
-- "Find issues about login" → redmine_tools (Redmine query)
 
 Choose the most efficient datasource that will give the best answer."""
 

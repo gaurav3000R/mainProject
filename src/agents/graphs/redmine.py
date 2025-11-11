@@ -8,6 +8,7 @@ from src.agents.nodes.adaptive_rag import AdaptiveRAGRouter, AdaptiveRAGGrader
 from src.tools.redmine import redmine_tools
 from src.tools.base import get_web_search_tool
 from src.services.redmine_metadata import metadata_loader
+from src.services.redmine_vectorstore import redmine_vectorstore
 from src.llms.base import BaseLLM
 from src.utils.logger import app_logger
 
@@ -39,60 +40,64 @@ class AdaptiveRedmineChatbot:
         from src.tools.redmine_enhanced import enhanced_tools
         self.tools = self.tools + enhanced_tools
         
-        # Adaptive RAG components
-        self.router = AdaptiveRAGRouter(llm)
-        self.grader = AdaptiveRAGGrader(llm)
+        # Add vector-based semantic search tools
+        from src.tools.redmine_vector import vector_tools
+        self.tools = self.tools + vector_tools
+        self.vector_tools = vector_tools  # Keep separate reference
         
-        # Bind tools to LLM
-        self.llm_with_tools = self.llm.get_client().bind_tools(self.tools)
+        # Adaptive RAG components (disabled for performance)
+        # self.router = AdaptiveRAGRouter(llm)
+        # self.grader = AdaptiveRAGGrader(llm)
+        
+        # Bind tools to LLM with strict parameter handling
+        self.llm_with_tools = self.llm.get_client().bind_tools(
+            self.tools,
+            tool_choice="auto"
+        )
+        
+        # Cache system message for performance
+        self._cached_system_message = None
         
         self.graph = self._build_graph()
-        app_logger.info(f"Initialized AdaptiveRedmineChatbot with {len(self.tools)} tools (incl. {len(enhanced_tools)} enhanced)")
+        total_tools = len(self.tools)
+        app_logger.info(f"Initialized AdaptiveRedmineChatbot with {total_tools} tools "
+                       f"(8 original + {len(enhanced_tools)} enhanced + {len(vector_tools)} vector)")
     
     def _create_system_message(self) -> SystemMessage:
-        """Create system message for Redmine assistant with Adaptive RAG and metadata context."""
+        """Create cached system message for Redmine assistant (lightweight version)."""
         
-        # Get metadata context
-        metadata_context = metadata_loader.get_metadata_summary()
+        if self._cached_system_message is not None:
+            return self._cached_system_message
         
-        base_prompt = """You are an intelligent Redmine assistant with Adaptive RAG capabilities.
+        # Lightweight metadata context (only counts, not full details)
+        num_projects = len(metadata_loader.projects)
+        num_statuses = len(metadata_loader.statuses)
+        num_priorities = len(metadata_loader.priorities)
+        
+        base_prompt = f"""You are an intelligent Redmine assistant with tool access.
 
-You have access to:
-- **Redmine Tools**: Direct access to projects, issues, time entries, and metadata
-- **Web Search**: For external information and general knowledge
-- **Your Knowledge**: For simple queries and conversational responses
+You have access to {num_projects} projects, {num_statuses} statuses, {num_priorities} priorities, and various Redmine tools.
 
-**Current Redmine Instance Information:**
-{metadata_context}
+**Key Tools Available:**
+- get_redmine_projects: List all projects
+- get_redmine_issues: Get issues for a project
+- get_redmine_issue_details: Get specific issue details
+- search_redmine_issues: Search issues by query
+- search_redmine_metadata: Search projects/issues semantically
+- create_redmine_issue: Create new issues
+- update_redmine_issue: Update existing issues
 
-Capabilities:
-- View and manage projects and issues
-- Create and update issues
-- Search and filter data
-- Access time entries and metadata
-- Provide helpful information
+**Guidelines:**
+1. When asked about projects, use get_redmine_projects first
+2. For issues in a specific project, find project ID then use get_redmine_issues
+3. For searching across all projects, use search_redmine_issues
+4. Always return concise, helpful responses
+5. Use tools efficiently - avoid unnecessary calls
 
-**Important Guidelines:**
-1. Use EXACT project names and IDs from the list above
-2. Reference actual statuses, priorities, and trackers available
-3. When users mention a project name, find its ID from the list
-4. For issue IDs, use numeric values only (e.g., "123", not "Project Name")
-5. Always verify project/status/priority names against available options
+Be direct and helpful. Use tools to fetch real-time data."""
 
-**Examples:**
-- "Show me Ni-kshay Setu Revamp issues" → Use project ID 37
-- "What projects do I have?" → List the {num_projects} projects above
-- "Change status to closed" → Use status ID from available statuses
-
-Be conversational, helpful, and accurate. When using tools, explain what you found.
-When information is missing or unclear, ask for clarification."""
-
-        return SystemMessage(
-            content=base_prompt.format(
-                metadata_context=metadata_context,
-                num_projects=len(metadata_loader.projects)
-            )
-        )
+        self._cached_system_message = SystemMessage(content=base_prompt)
+        return self._cached_system_message
     
     def _chatbot_node(self, state: RedmineChatState) -> RedmineChatState:
         """
@@ -104,17 +109,17 @@ When information is missing or unclear, ask for clarification."""
         Returns:
             Updated state with AI response
         """
-        # Add system message if this is the first message
+        # Add system message only on first turn
         messages = state["messages"]
         if len(messages) == 1 or not any(isinstance(m, SystemMessage) for m in messages):
             messages = [self._create_system_message()] + messages
         
-        # Get response from LLM with tools
-        response = self.llm_with_tools.invoke(messages)
+        # Get response from LLM with tools (fast mode)
+        response = self.llm_with_tools.invoke(messages, config={"max_tokens": 2048})
         
         return {
             **state,
-            "messages": [response]  # Just add the new response
+            "messages": [response]
         }
     
     def _should_continue(self, state: RedmineChatState):

@@ -211,7 +211,7 @@ DEBUG=true
 from src.llms.base import LLMFactory
 
 # Create LLM dynamically
-llm = LLMFactory.create(provider="groq", model_name="llama-3.3-70b-versatile")
+llm = LLMFactory.create(provider="groq", model_name="qwen/qwen3-32b")
 ```
 
 ### Graph Builder
